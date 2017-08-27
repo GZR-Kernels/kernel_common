@@ -977,6 +977,8 @@ sg_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
 		result = get_user(val, ip);
 		if (result)
 			return result;
+		if (val > SG_MAX_CDB_SIZE)
+			return -ENOMEM;
 		sfp->next_cmd_len = (val > 0) ? val : 0;
 		return 0;
 	case SG_GET_VERSION_NUM:
@@ -1693,6 +1695,9 @@ static int sg_start_req(Sg_request *srp, unsigned char *cmd)
 		else
 			md->from_user = 0;
 	}
+
+	if (unlikely(iov_count > UIO_MAXIOV))
+		return -EINVAL;
 
 	if (iov_count) {
 		int len, size = sizeof(struct sg_iovec) * iov_count;
